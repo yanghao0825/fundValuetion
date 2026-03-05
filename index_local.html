@@ -117,59 +117,50 @@
   </div>
 
   <script>
-    // 关键：使用 CORS 代理，让 GitHub Pages 可以正常调用京东接口
-    const CORS_PROXY = "https://api.allorigins.win/get?url=";
-    const JD_API = "https://ms.jr.jd.com/gw2/generic/life/h5/m/getFundDetailPageInfoWithNoPin";
 
+
+    // 调用 UniCloud 云对象
+    const FUND_DOMAIN = "https://fc-mp-a29d40d4-0b3a-4132-9206-453100d7fe60.next.bspapp.com";
     async function search() {
       const code = document.getElementById("code").value.trim();
-      if (!code || code.length !== 6) {
-        alert("请输入6位基金代码");
-        return;
-      }
-
       const loading = document.getElementById("loading");
       const error = document.getElementById("error");
       const result = document.getElementById("result");
+
       loading.style.display = "block";
       error.style.display = "none";
       result.style.display = "none";
 
       try {
-        const url = encodeURIComponent(`${JD_API}?fundCode=${code}`);
-        const resp = await fetch(CORS_PROXY + url);
-        const json = await resp.json();
-        const data = JSON.parse(json.contents);
 
-        if (!data.success || !data.resultData || data.resultData.code !== "0000") {
-          throw new Error("接口返回异常");
-        }
-
-        const datas = data.resultData.datas;
-        const header = datas.headerOfItem;
-        const common = datas.commonAttributeNoPin;
-
-        // 取出估值
-        let nav = 0;
-        let dailyRate = 0;
-        header.quotationsMap.forEach(q => {
-          if (q.type === "nav") nav = parseFloat(q.value);
-          if (q.type === "dailyRate") dailyRate = parseFloat(q.value);
+        const requestUrl = `${FUND_DOMAIN}/fund/getFundData?fundCode=${code}`;
+        const resp = await fetch(requestUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json"
+          }
         });
 
-        const realtimeRate = parseFloat(common.realtimeValuationOfItem || 0);
-        const realtimeNav = nav > 0 ? (nav * (1 + realtimeRate / 100)).toFixed(4) : 0;
+        if (!resp.ok) {
+          throw new Error(`HTTP 请求失败：${resp.status}`);
+        }
 
-        // 渲染
-        result.innerHTML = `
-      <div class="item"><span>基金名称</span><span>${header.fundName}</span></div>
-      <div class="item"><span>基金类型</span><span>${header.fundTypeName}</span></div>
-      <div class="item"><span>最新净值</span><span>${nav.toFixed(4)}</span></div>
-      <div class="item"><span>昨日涨跌幅</span><span class="${dailyRate >= 0 ? 'rise' : 'fall'}">${dailyRate >= 0 ? '+' + dailyRate : dailyRate}%</span></div>
-      <div class="item"><span>实时估值涨幅</span><span class="${realtimeRate >= 0 ? 'rise' : 'fall'}">${realtimeRate >= 0 ? '+' + realtimeRate : realtimeRate}%</span></div>
-      <div class="item"><span>实时估算净值</span><span>${realtimeNav}</span></div>
-    `;
-        result.style.display = "block";
+        const res = await resp.json();
+        console.log(res, 'res')
+        if (res.success && res.data) {
+          // 渲染数据
+          result.innerHTML = `
+        <div class="item"><span>基金名称</span><span>${res.data.fundName}</span></div>
+        <div class="item"><span>基金类型</span><span>${res.data.fundType}</span></div>
+        <div class="item"><span>最新净值</span><span>${res.data.latestNav.toFixed(4)}</span></div>
+        <div class="item"><span>昨日涨跌幅</span><span class="${res.data.dailyRate >= 0 ? 'rise' : 'fall'}">${res.data.dailyRate >= 0 ? '+' + res.data.dailyRate : res.data.dailyRate}%</span></div>
+        <div class="item"><span>实时估值涨幅</span><span class="${res.data.realtimeValuationRate >= 0 ? 'rise' : 'fall'}">${res.data.realtimeValuationRate >= 0 ? '+' + res.data.realtimeValuationRate : res.data.realtimeValuationRate}%</span></div>
+        <div class="item"><span>实时估算净值</span><span>${res.data.realtimeValuationNav}</span></div>
+      `;
+          result.style.display = "block";
+        } else {
+          throw new Error(res.msg);
+        }
       } catch (e) {
         error.innerText = "查询失败：" + e.message;
         error.style.display = "block";
