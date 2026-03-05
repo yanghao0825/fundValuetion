@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>基金估值查询（京东金融接口版）</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    body {
+      background: #f5f7fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+      padding: 30px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      font-size: 22px;
+      margin-bottom: 25px;
+    }
+
+    .search-area {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    #fundCodeInput {
+      flex: 1;
+      padding: 14px 18px;
+      border: 1px solid #e0e6ed;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    #fundCodeInput:focus {
+      border-color: #409eff;
+      box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
+    }
+
+    #queryBtn {
+      padding: 14px 28px;
+      background: #409eff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    #queryBtn:hover {
+      background: #337ecc;
+    }
+
+    #queryBtn:disabled {
+      background: #909399;
+      cursor: not-allowed;
+    }
+
+    .status {
+      text-align: center;
+      padding: 15px;
+      font-size: 15px;
+      display: none;
+    }
+
+    .loading {
+      color: #666;
+    }
+
+    .error {
+      color: #e74c3c;
+    }
+
+    .result-card {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+      display: none;
+    }
+
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px dashed #e0e6ed;
+    }
+
+    .result-item:last-child {
+      border-bottom: none;
+    }
+
+    .label {
+      color: #596981;
+      font-size: 15px;
+    }
+
+    .value {
+      color: #2c3e50;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .rise {
+      color: #e74c3c;
+    }
+
+    .fall {
+      color: #27ae60;
+    }
+
+    /* 历史净值表格 */
+    .history-card {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+      display: none;
+    }
+
+    .history-title {
+      font-size: 16px;
+      color: #2c3e50;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .history-table th,
+    .history-table td {
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #e0e6ed;
+    }
+
+    .history-table th {
+      background: #eef2f7;
+      color: #596981;
+    }
+
+    /* 基金经理信息 */
+    .manager-card {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+      display: none;
+    }
+
+    .manager-title {
+      font-size: 16px;
+      color: #2c3e50;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .manager-item {
+      padding: 8px 0;
+      border-bottom: 1px dashed #e0e6ed;
+    }
+
+    .manager-item:last-child {
+      border-bottom: none;
+    }
+
+    .tips {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fcfcfc;
+      border-left: 3px solid #e6f7ff;
+      font-size: 13px;
+      color: #7f8c8d;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>基金估值查询（京东金融接口版）</h1>
+
+    <!-- 搜索区域 -->
+    <div class="search-area">
+      <input type="text" id="fundCodeInput" placeholder="输入6位基金代码（如025832）" maxlength="6">
+      <button id="queryBtn" onclick="queryFund()">查询</button>
+    </div>
+
+    <!-- 状态提示 -->
+    <div id="loading" class="status loading">正在查询京东金融接口...</div>
+    <div id="error" class="status error">暂无数据，请检查基金代码或网络</div>
+
+    <!-- 核心估值结果 -->
+    <div id="resultCard" class="result-card">
+      <div class="result-item">
+        <span class="label">基金代码</span>
+        <span id="fundCode" class="value"></span>
+      </div>
+      <div class="result-item">
+        <span class="label">基金名称</span>
+        <span id="fundName" class="value"></span>
+      </div>
+      <div class="result-item">
+        <span class="label">基金类型</span>
+        <span id="fundType" class="value"></span>
+      </div>
+      <div class="result-item">
+        <span class="label">成立时间</span>
+        <span id="establishedDate" class="value"></span>
+      </div>
+      <div class="result-item">
+        <span class="label">基金公司</span>
+        <span id="fundCompany" class="value"></span>
+      </div>
+      <div class="result-item">
+        <span class="label">最新净值（{{latestNavDate}}）</span>
+        <span id="latestNav" class="value"></span>
+      </div>
+      <div class="result-item">
+        <span class="label">昨日涨跌幅</span>
+        <span id="dailyRate" class="value"></span>
+      </div>
+      <div class="result-item">
+        <span class="label">实时估值涨幅</span>
+        <span id="realtimeValuationRate" class="value"></span>
+      </div>
+      <div class="result-item">
+        <span class="label">实时估算净值</span>
+        <span id="realtimeValuationNav" class="value"></span>
+      </div>
+      <div class="result-item">
+        <span class="label">数据更新时间</span>
+        <span id="updateTime" class="value"></span>
+      </div>
+    </div>
+
+    <!-- 基金经理信息 -->
+    <div id="managerCard" class="manager-card">
+      <div class="manager-title">基金经理信息</div>
+      <div id="managerList"></div>
+    </div>
+
+    <!-- 历史净值数据 -->
+    <div id="historyCard" class="history-card">
+      <div class="history-title">最近5日净值数据</div>
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>单位净值</th>
+            <th>日涨跌幅(%)</th>
+          </tr>
+        </thead>
+        <tbody id="historyTableBody">
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 注意事项 -->
+    <div class="tips">
+      ⚠️ 数据说明：<br>
+      1. 实时估值涨幅和估算净值来源于京东金融接口，为官方估算数据；<br>
+      2. 最新净值为基金公司公布的最新数据，实时估值仅供参考；<br>
+      3. 数据更新时间为查询时刻，非基金公司实时更新。
+    </div>
+  </div>
+
+  <script>
+    window.onload = function () {
+      hideAllStatus();
+      // 回车查询
+      document.getElementById("fundCodeInput").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") queryFund();
+      });
+    };
+
+    async function queryFund() {
+      const fundCode = document.getElementById("fundCodeInput").value.trim();
+      const queryBtn = document.getElementById("queryBtn");
+
+      // 输入校验
+      if (!fundCode || fundCode.length !== 6 || isNaN(fundCode)) {
+        alert("请输入6位有效数字基金代码！");
+        return;
+      }
+
+      // 加载状态
+      queryBtn.disabled = true;
+      showLoading();
+
+      try {
+        // 调用后端接口
+        const response = await fetch(`http://localhost:5001/api/fund?code=${fundCode}`);
+        const result = await response.json();
+
+        if (result.status === "success") {
+          const data = result.data;
+
+          // 填充核心估值数据
+          document.getElementById("fundCode").innerText = data.fund_code;
+          document.getElementById("fundName").innerText = data.fund_name;
+          document.getElementById("fundType").innerText = data.fund_type;
+          document.getElementById("establishedDate").innerText = data.established_date;
+          document.getElementById("fundCompany").innerText = data.fund_company;
+          document.getElementById("latestNav").innerText = data.latest_nav.toFixed(4);
+          document.getElementById("updateTime").innerText = result.update_time;
+
+          // 昨日涨跌幅样式
+          const dailyRate = data.daily_rate;
+          if (dailyRate !== 0) {
+            const rateText = dailyRate >= 0 ? `+${dailyRate.toFixed(2)}%` : `${dailyRate.toFixed(2)}%`;
+            document.getElementById("dailyRate").innerText = rateText;
+            document.getElementById("dailyRate").className = `value ${dailyRate >= 0 ? "rise" : "fall"}`;
+          } else {
+            document.getElementById("dailyRate").innerText = "无数据";
+            document.getElementById("dailyRate").className = "value";
+          }
+
+          // 实时估值涨幅样式
+          const realtimeRate = data.realtime_valuation_rate;
+          if (realtimeRate !== 0) {
+            const rateText = realtimeRate >= 0 ? `+${realtimeRate.toFixed(2)}%` : `${realtimeRate.toFixed(2)}%`;
+            document.getElementById("realtimeValuationRate").innerText = rateText;
+            document.getElementById("realtimeValuationRate").className = `value ${realtimeRate >= 0 ? "rise" : "fall"}`;
+          } else {
+            document.getElementById("realtimeValuationRate").innerText = "无数据";
+            document.getElementById("realtimeValuationRate").className = "value";
+          }
+
+          // 实时估算净值
+          document.getElementById("realtimeValuationNav").innerText = data.realtime_valuation_nav > 0
+            ? data.realtime_valuation_nav.toFixed(4)
+            : "无数据";
+
+          // 填充基金经理信息
+          const managerList = document.getElementById("managerList");
+          managerList.innerHTML = "";
+          if (data.fund_manager && data.fund_manager.length > 0) {
+            data.fund_manager.forEach(manager => {
+              const item = document.createElement("div");
+              item.className = "manager-item";
+              item.innerHTML = `
+                                <div><strong>姓名：</strong>${manager.name}</div>
+                                <div><strong>管理规模：</strong>${manager.manage_scale}</div>
+                                <div><strong>任职时间：</strong>${manager.accession_date}</div>
+                            `;
+              managerList.appendChild(item);
+            });
+            document.getElementById("managerCard").style.display = "block";
+          } else {
+            document.getElementById("managerCard").style.display = "none";
+          }
+
+          // 填充历史净值表格
+          const historyBody = document.getElementById("historyTableBody");
+          historyBody.innerHTML = "";
+          if (data.history_nav && data.history_nav.length > 0) {
+            data.history_nav.forEach(history => {
+              const tr = document.createElement("tr");
+              // 日期
+              const tdDate = document.createElement("td");
+              tdDate.innerText = history.date;
+              tr.appendChild(tdDate);
+              // 单位净值
+              const tdNav = document.createElement("td");
+              tdNav.innerText = history.net_value.toFixed(4);
+              tr.appendChild(tdNav);
+              // 日涨跌幅
+              const tdRate = document.createElement("td");
+              const rateText = history.daily_profit >= 0 ? `+${history.daily_profit.toFixed(2)}%` : `${history.daily_profit.toFixed(2)}%`;
+              tdRate.innerText = rateText;
+              tdRate.className = history.daily_profit >= 0 ? "rise" : "fall";
+              tr.appendChild(tdRate);
+
+              historyBody.appendChild(tr);
+            });
+            document.getElementById("historyCard").style.display = "block";
+          } else {
+            document.getElementById("historyCard").style.display = "none";
+          }
+
+          // 显示结果
+          hideAllStatus();
+          document.getElementById("resultCard").style.display = "block";
+        } else {
+          throw new Error(result.msg || "查询失败");
+        }
+      } catch (e) {
+        hideAllStatus();
+        document.getElementById("error").innerText = e.message;
+        document.getElementById("error").style.display = "block";
+      } finally {
+        queryBtn.disabled = false;
+      }
+    }
+
+    function showLoading() {
+      hideAllStatus();
+      document.getElementById("loading").style.display = "block";
+    }
+
+    function hideAllStatus() {
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("error").style.display = "none";
+      document.getElementById("resultCard").style.display = "none";
+      document.getElementById("managerCard").style.display = "none";
+      document.getElementById("historyCard").style.display = "none";
+    }
+  </script>
+</body>
+
+</html>

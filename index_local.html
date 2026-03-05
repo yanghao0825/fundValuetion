@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>基金估值查询</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      background: #f5f7fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 12px;
+      padding: 30px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 22px;
+    }
+
+    .search {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 12px 24px;
+      background: #409eff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .tips {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 10px;
+    }
+
+    .result {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px dashed #eee;
+    }
+
+    .rise {
+      color: red;
+    }
+
+    .fall {
+      color: green;
+    }
+
+    #loading {
+      display: none;
+      text-align: center;
+      padding: 10px;
+    }
+
+    #error {
+      display: none;
+      color: red;
+      text-align: center;
+      padding: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1>基金估值查询（GitHub可用）</h1>
+    <div class="tips">数据来源：京东金融，上传GitHub可直接使用</div>
+
+    <div class="search">
+      <input id="code" placeholder="输入6位基金代码" maxlength="6">
+      <button onclick="search()">查询</button>
+    </div>
+
+    <div id="loading">加载中...</div>
+    <div id="error"></div>
+
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    // 关键：使用 CORS 代理，让 GitHub Pages 可以正常调用京东接口
+    const CORS_PROXY = "https://api.allorigins.win/get?url=";
+    const JD_API = "https://ms.jr.jd.com/gw2/generic/life/h5/m/getFundDetailPageInfoWithNoPin";
+
+    async function search() {
+      const code = document.getElementById("code").value.trim();
+      if (!code || code.length !== 6) {
+        alert("请输入6位基金代码");
+        return;
+      }
+
+      const loading = document.getElementById("loading");
+      const error = document.getElementById("error");
+      const result = document.getElementById("result");
+      loading.style.display = "block";
+      error.style.display = "none";
+      result.style.display = "none";
+
+      try {
+        const url = encodeURIComponent(`${JD_API}?fundCode=${code}`);
+        const resp = await fetch(CORS_PROXY + url);
+        const json = await resp.json();
+        const data = JSON.parse(json.contents);
+
+        if (!data.success || !data.resultData || data.resultData.code !== "0000") {
+          throw new Error("接口返回异常");
+        }
+
+        const datas = data.resultData.datas;
+        const header = datas.headerOfItem;
+        const common = datas.commonAttributeNoPin;
+
+        // 取出估值
+        let nav = 0;
+        let dailyRate = 0;
+        header.quotationsMap.forEach(q => {
+          if (q.type === "nav") nav = parseFloat(q.value);
+          if (q.type === "dailyRate") dailyRate = parseFloat(q.value);
+        });
+
+        const realtimeRate = parseFloat(common.realtimeValuationOfItem || 0);
+        const realtimeNav = nav > 0 ? (nav * (1 + realtimeRate / 100)).toFixed(4) : 0;
+
+        // 渲染
+        result.innerHTML = `
+      <div class="item"><span>基金名称</span><span>${header.fundName}</span></div>
+      <div class="item"><span>基金类型</span><span>${header.fundTypeName}</span></div>
+      <div class="item"><span>最新净值</span><span>${nav.toFixed(4)}</span></div>
+      <div class="item"><span>昨日涨跌幅</span><span class="${dailyRate >= 0 ? 'rise' : 'fall'}">${dailyRate >= 0 ? '+' + dailyRate : dailyRate}%</span></div>
+      <div class="item"><span>实时估值涨幅</span><span class="${realtimeRate >= 0 ? 'rise' : 'fall'}">${realtimeRate >= 0 ? '+' + realtimeRate : realtimeRate}%</span></div>
+      <div class="item"><span>实时估算净值</span><span>${realtimeNav}</span></div>
+    `;
+        result.style.display = "block";
+      } catch (e) {
+        error.innerText = "查询失败：" + e.message;
+        error.style.display = "block";
+      } finally {
+        loading.style.display = "none";
+      }
+    }
+  </script>
+</body>
+
+</html>
