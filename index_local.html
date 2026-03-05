@@ -115,38 +115,40 @@
 
     <div class="result" id="result"></div>
   </div>
-  
+
   <script>
-    
 
-  // 调用 UniCloud 云对象
-  const FUND_DOMAIN = "https://fc-mp-a29d40d4-0b3a-4132-9206-453100d7fe60.next.bspapp.com";
-  async function search() {
-  const code = document.getElementById("code").value.trim();
-  const loading = document.getElementById("loading");
-  const error = document.getElementById("error");
-  const result = document.getElementById("result");
-  
-  loading.style.display = "block";
-  error.style.display = "none";
-  result.style.display = "none";
 
-  try {
-    
-    const requestUrl = `${FUND_DOMAIN}/fundApi/getFundData?fundCode=${code}`;
-  const resp = await fetch(requestUrl, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json"
-      }
-    });
+    // 调用 UniCloud 云对象
+    const FUND_DOMAIN = "https://fc-mp-a29d40d4-0b3a-4132-9206-453100d7fe60.next.bspapp.com";
+    async function search() {
+      const code = document.getElementById("code").value.trim();
+      const loading = document.getElementById("loading");
+      const error = document.getElementById("error");
+      const result = document.getElementById("result");
 
-    if (!resp.ok) {
-      throw new Error(`HTTP 请求失败：${resp.status}`);
-    }
-    if (res.status === "success") {
-      // 渲染数据
-      result.innerHTML = `
+      loading.style.display = "block";
+      error.style.display = "none";
+      result.style.display = "none";
+
+      try {
+
+        const requestUrl = `${FUND_DOMAIN}/fund/getFundData?fundCode=${code}`;
+        const resp = await fetch(requestUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (!resp.ok) {
+          throw new Error(`HTTP 请求失败：${resp.status}`);
+        }
+
+        const res = await resp.json();
+        if (res.success && res.data) {
+          // 渲染数据
+          result.innerHTML = `
         <div class="item"><span>基金名称</span><span>${res.data.fundName}</span></div>
         <div class="item"><span>基金类型</span><span>${res.data.fundType}</span></div>
         <div class="item"><span>最新净值</span><span>${res.data.latestNav.toFixed(4)}</span></div>
@@ -154,17 +156,17 @@
         <div class="item"><span>实时估值涨幅</span><span class="${res.data.realtimeValuationRate >= 0 ? 'rise' : 'fall'}">${res.data.realtimeValuationRate >= 0 ? '+' + res.data.realtimeValuationRate : res.data.realtimeValuationRate}%</span></div>
         <div class="item"><span>实时估算净值</span><span>${res.data.realtimeValuationNav}</span></div>
       `;
-      result.style.display = "block";
-    } else {
-      throw new Error(res.msg);
+          result.style.display = "block";
+        } else {
+          throw new Error(res.msg);
+        }
+      } catch (e) {
+        error.innerText = "查询失败：" + e.message;
+        error.style.display = "block";
+      } finally {
+        loading.style.display = "none";
+      }
     }
-  } catch (e) {
-    error.innerText = "查询失败：" + e.message;
-    error.style.display = "block";
-  } finally {
-    loading.style.display = "none";
-  }
-}
   </script>
 </body>
 
