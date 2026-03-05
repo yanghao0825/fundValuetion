@@ -116,22 +116,12 @@
     <div class="result" id="result"></div>
   </div>
   
-  
-<script src="https://cdn.jsdelivr.net/npm/@dcloudio/uni-cloud-js/dist/uni-cloud.js"></script>
-  
   <script>
-// 引入 UniCloud 前端 SDK（在 HTML 头部添加）
-// 初始化 UniCloud（替换为你的云服务空间 ID）
-const cloud = uniCloud.init({
-  provider: "aliyun", // 阿里云/腾讯云二选一
-  spaceId: "mp-a29d40d4-0b3a-4132-9206-453100d7fe60" // 控制台可查
-});
     
-    // 关键：使用 CORS 代理，让 GitHub Pages 可以正常调用京东接口
-    const CORS_PROXY = "https://api.allorigins.win/get?url=";
-    const JD_API = "https://ms.jr.jd.com/gw2/generic/life/h5/m/getFundDetailPageInfoWithNoPin";
 
-    async function search() {
+  // 调用 UniCloud 云对象
+  const FUND_DOMAIN = "https://fc-mp-a29d40d4-0b3a-4132-9206-453100d7fe60.next.bspapp.com";
+  async function search() {
   const code = document.getElementById("code").value.trim();
   const loading = document.getElementById("loading");
   const error = document.getElementById("error");
@@ -142,10 +132,18 @@ const cloud = uniCloud.init({
   result.style.display = "none";
 
   try {
-    // 调用 UniCloud 云对象
-    const fundApi = cloud.importObject("fundApi");
-    const res = await fundApi.getFundData(code);
+    
+    const requestUrl = `${FUND_DOMAIN}/fundApi/getFundData?fundCode=${code}`;
+  const resp = await fetch(requestUrl, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
 
+    if (!resp.ok) {
+      throw new Error(`HTTP 请求失败：${resp.status}`);
+    }
     if (res.status === "success") {
       // 渲染数据
       result.innerHTML = `
