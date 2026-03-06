@@ -157,6 +157,21 @@
         <div class="item"><span>实时估算净值</span><span>${res.data.realtimeValuationNav}</span></div>
       `;
           result.style.display = "block";
+          if (res.data.stockList && res.data.stockList.length > 0) {
+            let stockHtml = '<div class="item"><span style="font-weight:bold">重仓股明细</span><span></span></div>';
+            res.data.stockList.forEach(stock => {
+              stockHtml += `
+      <div class="item">
+        <span>${stock.stockName}(${stock.stockCode})[${stock.industryName}]</span>
+        <span class="${stock.rate >= 0 ? 'rise' : 'fall'}">
+          ${stock.rate >= 0 ? '+' + stock.rate : stock.rate}% 
+          (权重${stock.weight}%)
+        </span>
+      </div>
+    `;
+            });
+            result.innerHTML += stockHtml;
+          }
         } else {
           throw new Error(res.msg);
         }
