@@ -8,9 +8,4 @@
 4. 返回格式化的重仓股明细（名称、代码、涨跌幅、权重、行业）。
 
 ## 环境依赖
-- Python 3.7+
-- 第三方库：`aiohttp`
-
-## 安装依赖
-```bash
-pip install aiohttp
+- uniCloud
