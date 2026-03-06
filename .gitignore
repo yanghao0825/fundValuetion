@@ -1,0 +1,37 @@
+# 忽略指定文件
+fund_server.py
+index.html
+
+# Python 项目通用忽略项（可选，推荐保留）
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+.venv
+venv/
+ENV/
+
+# 通用忽略项
+.DS_Store
+.idea/
+.vscode/
+*.log
