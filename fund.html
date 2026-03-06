@@ -32,6 +32,14 @@
       font-size: 22px;
     }
 
+    .tips {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 10px;
+      text-align: center;
+      display: block;
+    }
+
     .search {
       display: flex;
       gap: 10px;
@@ -47,18 +55,135 @@
     }
 
     button {
+      font-size: 16px;
       padding: 12px 24px;
       background: #409eff;
       color: #fff;
       border: none;
       border-radius: 8px;
       cursor: pointer;
+      transition: background 0.2s;
     }
 
-    .tips {
+    button:hover {
+      background: #66b1ff;
+    }
+
+    /* 历史记录样式 */
+    .history-box {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .history-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .clear-btn {
+      padding: 5px 10px;
+      font-size: 12px;
+      background: #f56c6c;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+    }
+
+    .clear-btn:hover {
+      background: #f78989;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      background: #fff;
+      border-radius: 6px;
+      border: 1px solid #eee;
+    }
+
+    .history-content {
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .history-content:hover {
+      opacity: 0.8;
+    }
+
+    .history-code {
+      font-size: 14px;
+      font-weight: bold;
+      color: #409eff;
+      width: 80px;
+    }
+
+    .history-name {
+      flex: 1;
+      font-size: 14px;
+      color: #333;
+      margin: 0 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-time {
       font-size: 12px;
       color: #999;
-      margin-bottom: 10px;
+      width: 150px;
+      text-align: right;
+    }
+
+    /* 单条删除按钮 */
+    .delete-btn {
+      padding: 5px 10px;
+      font-size: 12px;
+      background: #ff4757;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      margin-left: 10px;
+      min-width: 60px;
+    }
+
+    .delete-btn:hover {
+      background: #ff6b81;
+    }
+
+    #loading {
+      display: none;
+      text-align: center;
+      padding: 10px;
+      color: #666;
+      font-size: 14px;
+    }
+
+    #error {
+      display: none;
+      color: red;
+      text-align: center;
+      padding: 10px;
+      font-size: 14px;
     }
 
     .result {
@@ -84,55 +209,189 @@
       color: green;
     }
 
-    #loading {
+    /* Toast 提示样式（网页端模拟小程序toast） */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 14px;
+      z-index: 9999;
       display: none;
-      text-align: center;
-      padding: 10px;
-    }
-
-    #error {
-      display: none;
-      color: red;
-      text-align: center;
-      padding: 10px;
     }
   </style>
 </head>
 
 <body>
-
   <div class="container">
     <h1>基金估值查询</h1>
-    <div class="tips">数据来源：京东金融</div>
+    <span class="tips">数据来源：京东金融</span>
 
     <div class="search">
       <input id="code" placeholder="输入6位基金代码" maxlength="6">
       <button onclick="search()">查询</button>
     </div>
 
+    <!-- 历史记录区域 -->
+    <div class="history-box" id="historyBox" style="display: none;">
+      <div class="history-header">
+        <span class="history-title">搜索历史</span>
+        <button class="clear-btn" onclick="clearHistory()">清空全部</button>
+      </div>
+      <div class="history-list" id="historyList"></div>
+    </div>
+
     <div id="loading">加载中...</div>
     <div id="error"></div>
-
     <div class="result" id="result"></div>
+
+    <!-- Toast 提示框 -->
+    <div class="toast" id="toast"></div>
   </div>
 
   <script>
-
-
-    // 调用 UniCloud 云对象
+    // 常量定义
     const FUND_DOMAIN = "https://fc-mp-a29d40d4-0b3a-4132-9206-453100d7fe60.next.bspapp.com";
-    async function search() {
-      const code = document.getElementById("code").value.trim();
-      const loading = document.getElementById("loading");
-      const error = document.getElementById("error");
-      const result = document.getElementById("result");
+    // 历史记录列表
+    let historyList = [];
 
+    // 页面加载时读取本地历史记录
+    window.onload = function () {
+      const history = localStorage.getItem('fundSearchHistory');
+      if (history) {
+        historyList = JSON.parse(history);
+        renderHistoryList();
+      }
+    };
+
+    // 渲染历史记录列表
+    function renderHistoryList() {
+      const historyBox = document.getElementById('historyBox');
+      const historyListEl = document.getElementById('historyList');
+
+      // 无历史记录时隐藏区域
+      if (historyList.length === 0) {
+        historyBox.style.display = 'none';
+        return;
+      }
+
+      historyBox.style.display = 'block';
+      historyListEl.innerHTML = '';
+
+      // 遍历渲染每条历史
+      historyList.forEach((item, index) => {
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item';
+
+        // 历史内容（点击重查）
+        const historyContent = document.createElement('div');
+        historyContent.className = 'history-content';
+        historyContent.onclick = () => searchHistory(item.fundCode);
+        historyContent.innerHTML = `
+          <span class="history-code">${item.fundCode}</span>
+          <span class="history-name">${item.fundName}</span>
+          <span class="history-time">${item.searchTime}</span>
+        `;
+
+        // 删除按钮
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.innerText = '删除';
+        // 阻止事件冒泡（避免点击删除触发重查）
+        deleteBtn.onclick = (e) => {
+          e.stopPropagation();
+          deleteHistory(index);
+        };
+
+        historyItem.appendChild(historyContent);
+        historyItem.appendChild(deleteBtn);
+        historyListEl.appendChild(historyItem);
+      });
+    }
+
+    // 保存历史记录到本地
+    function saveHistory(fundCode, fundName) {
+      const historyItem = {
+        fundCode,
+        fundName,
+        searchTime: new Date().toLocaleString()
+      };
+
+      // 去重：删除旧记录
+      historyList = historyList.filter(item => item.fundCode !== fundCode);
+      // 新增记录置顶
+      historyList.unshift(historyItem);
+      // 限制最多10条
+      if (historyList.length > 10) {
+        historyList = historyList.slice(0, 10);
+      }
+      // 保存到localStorage
+      localStorage.setItem('fundSearchHistory', JSON.stringify(historyList));
+      // 重新渲染列表
+      renderHistoryList();
+    }
+
+    // 清空所有历史记录
+    function clearHistory() {
+      if (confirm('确定要清空所有搜索历史吗？')) {
+        historyList = [];
+        localStorage.removeItem('fundSearchHistory');
+        renderHistoryList();
+        showToast('已清空');
+      }
+    }
+
+    // 删除单条历史记录
+    function deleteHistory(index) {
+      if (confirm('确定要删除这条历史记录吗？')) {
+        historyList.splice(index, 1);
+        localStorage.setItem('fundSearchHistory', JSON.stringify(historyList));
+        renderHistoryList();
+        showToast('已删除');
+      }
+    }
+
+    // 点击历史记录重新查询
+    function searchHistory(code) {
+      document.getElementById('code').value = code;
+      search();
+    }
+
+    // 显示Toast提示
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.style.display = 'block';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 1500);
+    }
+
+    // 核心查询方法
+    async function search() {
+      const code = document.getElementById('code').value.trim();
+      const loading = document.getElementById('loading');
+      const error = document.getElementById('error');
+      const result = document.getElementById('result');
+
+      // 清空旧数据
       loading.style.display = "block";
       error.style.display = "none";
       result.style.display = "none";
 
-      try {
+      // 参数校验
+      if (!code || code.length !== 6 || isNaN(code)) {
+        loading.style.display = 'none';
+        error.innerText = '请输入6位有效数字基金代码';
+        error.style.display = 'block';
+        return;
+      }
 
+      try {
         const requestUrl = `${FUND_DOMAIN}/fund/getFundData?fundCode=${code}`;
         const resp = await fetch(requestUrl, {
           method: "GET",
@@ -147,33 +406,38 @@
 
         const res = await resp.json();
         if (res.success && res.data) {
-          // 渲染数据
+          // 渲染查询结果
           result.innerHTML = `
-        <div class="item"><span>基金名称</span><span>${res.data.fundName}</span></div>
-        <div class="item"><span>基金类型</span><span>${res.data.fundType}</span></div>
-        <div class="item"><span>最新净值</span><span>${res.data.latestNav.toFixed(4)}</span></div>
-        <div class="item"><span>昨日涨跌幅</span><span class="${res.data.dailyRate >= 0 ? 'rise' : 'fall'}">${res.data.dailyRate >= 0 ? '+' + res.data.dailyRate : res.data.dailyRate}%</span></div>
-        <div class="item"><span>实时估值涨幅</span><span class="${res.data.realtimeValuationRate >= 0 ? 'rise' : 'fall'}">${res.data.realtimeValuationRate >= 0 ? '+' + res.data.realtimeValuationRate : res.data.realtimeValuationRate}%</span></div>
-        <div class="item"><span>实时估算净值</span><span>${res.data.realtimeValuationNav}</span></div>
-      `;
-          result.style.display = "block";
+            <div class="item"><span>基金名称</span><span>${res.data.fundName}</span></div>
+            <div class="item"><span>基金类型</span><span>${res.data.fundType}</span></div>
+            <div class="item"><span>最新净值</span><span>${parseFloat(res.data.latestNav).toFixed(4)}</span></div>
+            <div class="item"><span>昨日涨跌幅</span><span class="${res.data.dailyRate >= 0 ? 'rise' : 'fall'}">${res.data.dailyRate >= 0 ? '+' + res.data.dailyRate : res.data.dailyRate}%</span></div>
+            <div class="item"><span>实时估值涨幅</span><span class="${res.data.realtimeValuationRate >= 0 ? 'rise' : 'fall'}">${res.data.realtimeValuationRate >= 0 ? '+' + res.data.realtimeValuationRate : res.data.realtimeValuationRate}%</span></div>
+            <div class="item"><span>实时估算净值</span><span>${res.data.realtimeValuationNav}</span></div>
+          `;
+
+          // 渲染重仓股明细
           if (res.data.stockList && res.data.stockList.length > 0) {
             let stockHtml = '<div class="item"><span style="font-weight:bold">重仓股明细</span><span></span></div>';
             res.data.stockList.forEach(stock => {
               stockHtml += `
-      <div class="item">
-        <span>${stock.stockName}(${stock.stockCode})[${stock.industryName}]</span>
-        <span class="${stock.rate >= 0 ? 'rise' : 'fall'}">
-          ${stock.rate >= 0 ? '+' + stock.rate : stock.rate}% 
-          (权重${stock.weight}%)
-        </span>
-      </div>
-    `;
+                <div class="item">
+                  <span>${stock.stockName}(${stock.stockCode})[${stock.industryName}]</span>
+                  <span class="${stock.rate >= 0 ? 'rise' : 'fall'}">
+                    ${stock.rate >= 0 ? '+' + stock.rate : stock.rate}% 
+                    (权重${stock.weight}%)
+                  </span>
+                </div>
+              `;
             });
             result.innerHTML += stockHtml;
           }
+
+          result.style.display = "block";
+          // 保存历史记录
+          saveHistory(code, res.data.fundName);
         } else {
-          throw new Error(res.msg);
+          throw new Error(res.error?.message || '查询失败，暂无数据');
         }
       } catch (e) {
         error.innerText = "查询失败：" + e.message;
