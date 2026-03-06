@@ -3,76 +3,102 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 核心适配：移动端视口配置 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <title>基金估值查询</title>
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: "Microsoft YaHei", sans-serif;
+      font-family: -apple-system, "Microsoft YaHei", sans-serif;
     }
 
     body {
       background: #f5f7fa;
-      padding: 20px;
+      padding: 10px;
+      /* 移动端减少内边距 */
+      font-size: 14px;
+      /* 基础字号适配 */
     }
 
     .container {
-      max-width: 800px;
+      width: 100%;
+      max-width: 1200px;
+      /* 移动端宽度100% */
       margin: 0 auto;
       background: #fff;
       border-radius: 12px;
-      padding: 30px;
+      padding: 20px 15px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
     h1 {
       text-align: center;
-      margin-bottom: 20px;
-      font-size: 22px;
+      margin-bottom: 15px;
+      font-size: 18px;
+      /* 移动端标题字号减小 */
+      font-weight: 600;
+      color: #333;
     }
 
     .tips {
       font-size: 12px;
       color: #999;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
       text-align: center;
       display: block;
+      line-height: 1.4;
     }
 
     .search {
       display: flex;
-      gap: 10px;
+      gap: 8px;
+      /* 移动端减小间距 */
       margin-bottom: 20px;
+      width: 100%;
     }
 
     input {
       flex: 1;
-      padding: 12px 16px;
-      border: 1px solid #ddd;
+      padding: 12px 15px;
+      /* 增大点击区域 */
+      border: 1px solid #e5e7eb;
       border-radius: 8px;
-      font-size: 16px;
+      font-size: 15px;
+      outline: none;
+      /* 去掉默认高亮 */
+    }
+
+    input:focus {
+      border-color: #409eff;
+      /* 聚焦态提示 */
     }
 
     button {
-      font-size: 16px;
-      padding: 12px 24px;
+      padding: 12px 18px;
+      /* 移动端按钮内边距适配 */
       background: #409eff;
       color: #fff;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       transition: background 0.2s;
+      font-size: 15px;
+      white-space: nowrap;
+      /* 防止按钮文字换行 */
     }
 
     button:hover {
       background: #66b1ff;
     }
 
-    /* 历史记录样式 */
+    /* 历史记录样式 - 移动端适配 */
     .history-box {
-      margin: 20px 0;
-      padding: 15px;
+      margin: 15px 0;
+      padding: 12px;
       background: #f8f9fa;
       border-radius: 8px;
     }
@@ -85,13 +111,14 @@
     }
 
     .history-title {
-      font-size: 16px;
-      font-weight: bold;
+      font-size: 15px;
+      font-weight: 600;
       color: #333;
     }
 
     .clear-btn {
-      padding: 5px 10px;
+      padding: 4px 8px;
+      /* 移动端清空按钮缩小 */
       font-size: 12px;
       background: #f56c6c;
       color: #fff;
@@ -106,24 +133,27 @@
     .history-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
+      /* 移动端减小列表间距 */
     }
 
     .history-item {
       display: flex;
       align-items: center;
-      padding: 10px;
+      padding: 10px 8px;
       background: #fff;
       border-radius: 6px;
       border: 1px solid #eee;
+      width: 100%;
     }
 
     .history-content {
       flex: 1;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      /* display: flex;
+      align-items: center; */
       cursor: pointer;
+      min-width: 0;
+      /* 关键：解决文字溢出问题 */
     }
 
     .history-content:hover {
@@ -132,38 +162,53 @@
 
     .history-code {
       font-size: 14px;
-      font-weight: bold;
+      font-weight: 600;
       color: #409eff;
-      width: 80px;
+      width: 70px;
+      /* 移动端减小代码宽度 */
+      flex-shrink: 0;
+      /* 防止被压缩 */
     }
 
     .history-name {
       flex: 1;
-      font-size: 14px;
+      font-size: 13px;
       color: #333;
-      margin: 0 10px;
+      margin: 0 8px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      line-height: 1.2;
     }
 
     .history-time {
-      font-size: 12px;
+      font-size: 11px;
       color: #999;
-      width: 150px;
+      width: 120px;
+      /* 移动端减小时间宽度 */
       text-align: right;
+      flex-shrink: 0;
+      /* 防止被压缩 */
     }
 
-    /* 单条删除按钮 */
+    /* 单条删除按钮 - 移动端适配 */
     .delete-btn {
-      padding: 5px 10px;
-      font-size: 12px;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+      text-align: center;
+      border-radius: 25px;
+      /* 移动端缩小删除按钮 */
+      font-size: 14px;
       background: #ff4757;
       color: #fff;
       border: none;
-      border-radius: 4px;
-      margin-left: 10px;
-      min-width: 60px;
+      margin-left: 8px;
+      /* 移动端减小最小宽度 */
+      flex-shrink: 0;
+      /* 防止被压缩 */
+      margin: 0;
+      padding: 0;
     }
 
     .delete-btn:hover {
@@ -184,14 +229,17 @@
       text-align: center;
       padding: 10px;
       font-size: 14px;
+      line-height: 1.4;
     }
 
     .result {
       background: #f8f9fa;
-      padding: 20px;
+      padding: 15px 12px;
+      /* 移动端减小内边距 */
       border-radius: 8px;
       margin-top: 10px;
       display: none;
+      width: 100%;
     }
 
     .item {
@@ -199,17 +247,26 @@
       justify-content: space-between;
       padding: 8px 0;
       border-bottom: 1px dashed #eee;
+      align-items: center;
+      /* 垂直居中，防止文字错位 */
+    }
+
+    .item:last-child {
+      border-bottom: none;
+      /* 最后一项去掉下划线 */
     }
 
     .rise {
-      color: red;
+      color: #f56c6c;
+      /* 移动端更柔和的红色 */
     }
 
     .fall {
-      color: green;
+      color: #67c23a;
+      /* 移动端更柔和的绿色 */
     }
 
-    /* Toast 提示样式（网页端模拟小程序toast） */
+    /* Toast 提示样式 - 移动端优化 */
     .toast {
       position: fixed;
       top: 50%;
@@ -217,11 +274,184 @@
       transform: translate(-50%, -50%);
       background: rgba(0, 0, 0, 0.7);
       color: #fff;
-      padding: 10px 20px;
+      padding: 8px 16px;
       border-radius: 4px;
       font-size: 14px;
       z-index: 9999;
       display: none;
+      min-width: 120px;
+      text-align: center;
+    }
+
+    /* 适配小屏手机（320px以下） */
+    @media screen and (max-width: 320px) {
+      .history-time {
+        width: 100px;
+        /* 超小屏再缩小时间宽度 */
+      }
+
+      .history-code {
+        width: 60px;
+        /* 超小屏缩小代码宽度 */
+      }
+
+      button {
+        padding: 12px 12px;
+        /* 超小屏按钮进一步缩小 */
+      }
+    }
+
+    /* 禁止用户缩放 */
+    * {
+      touch-action: manipulation;
+      /* 优化移动端点击 */
+    }
+
+    .acea-row {
+      display: -webkit-box;
+      display: -moz-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-lines: multiple;
+      -moz-box-lines: multiple;
+      -o-box-lines: multiple;
+      -webkit-flex-wrap: wrap;
+      -ms-flex-wrap: wrap;
+      flex-wrap: wrap;
+      /* 辅助类 */
+    }
+
+    .acea-row.row-middle {
+      -webkit-box-align: center;
+      -moz-box-align: center;
+      -o-box-align: center;
+      -ms-flex-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+    }
+
+    .acea-row.row-top {
+      -webkit-box-align: start;
+      -moz-box-align: start;
+      -o-box-align: start;
+      -ms-flex-align: start;
+      -webkit-align-items: flex-start;
+      align-items: flex-start;
+    }
+
+    .acea-row.row-bottom {
+      -webkit-box-align: end;
+      -moz-box-align: end;
+      -o-box-align: end;
+      -ms-flex-align: end;
+      -webkit-align-items: flex-end;
+      align-items: flex-end;
+    }
+
+    .acea-row.row-center {
+      -webkit-box-pack: center;
+      -moz-box-pack: center;
+      -o-box-pack: center;
+      -ms-flex-pack: center;
+      -webkit-justify-content: center;
+      justify-content: center;
+    }
+
+    .acea-row.row-right {
+      -webkit-box-pack: end;
+      -moz-box-pack: end;
+      -o-box-pack: end;
+      -ms-flex-pack: end;
+      -webkit-justify-content: flex-end;
+      justify-content: flex-end;
+    }
+
+    .acea-row.row-left {
+      -webkit-box-pack: start;
+      -moz-box-pack: start;
+      -o-box-pack: start;
+      -ms-flex-pack: start;
+      -webkit-justify-content: flex-start;
+      justify-content: flex-start;
+    }
+
+    .acea-row.row-between {
+      -webkit-box-pack: justify;
+      -moz-box-pack: justify;
+      -o-box-pack: justify;
+      -ms-flex-pack: justify;
+      -webkit-justify-content: space-between;
+      justify-content: space-between;
+    }
+
+    .acea-row.row-around {
+      justify-content: space-around;
+      -webkit-justify-content: space-around;
+    }
+
+    .acea-row.row-column-around {
+      -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      justify-content: space-around;
+      -webkit-justify-content: space-around;
+    }
+
+    .acea-row.row-column {
+      -webkit-box-orient: vertical;
+      -moz-box-orient: vertical;
+      -o-box-orient: vertical;
+      -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+      flex-direction: column;
+    }
+
+    .acea-row.row-column-between {
+      -webkit-box-orient: vertical;
+      -moz-box-orient: vertical;
+      -o-box-orient: vertical;
+      -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      -webkit-box-pack: justify;
+      -moz-box-pack: justify;
+      -o-box-pack: justify;
+      -ms-flex-pack: justify;
+      -webkit-justify-content: space-between;
+      justify-content: space-between;
+    }
+
+    /* 上下左右垂直居中 */
+    .acea-row.row-center-wrapper {
+      -webkit-box-align: center;
+      -moz-box-align: center;
+      -o-box-align: center;
+      -ms-flex-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      -webkit-box-pack: center;
+      -moz-box-pack: center;
+      -o-box-pack: center;
+      -ms-flex-pack: center;
+      -webkit-justify-content: center;
+      justify-content: center;
+    }
+
+    /* 上下两边居中对齐 */
+    .acea-row.row-between-wrapper {
+      -webkit-box-align: center;
+      -moz-box-align: center;
+      -o-box-align: center;
+      -ms-flex-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      -webkit-box-pack: justify;
+      -moz-box-pack: justify;
+      -o-box-pack: justify;
+      -ms-flex-pack: justify;
+      -webkit-justify-content: space-between;
+      justify-content: space-between;
     }
   </style>
 </head>
@@ -229,10 +459,10 @@
 <body>
   <div class="container">
     <h1>基金估值查询</h1>
-    <span class="tips">数据来源：京东金融</span>
+    <span class="tips">数据来源：京东金融 | 输入6位基金代码查询</span>
 
     <div class="search">
-      <input id="code" placeholder="输入6位基金代码" maxlength="6">
+      <input id="code" placeholder="输入6位基金代码" maxlength="6" inputmode="numeric">
       <button onclick="search()">查询</button>
     </div>
 
@@ -266,6 +496,10 @@
         historyList = JSON.parse(history);
         renderHistoryList();
       }
+      // 移动端优化：输入框聚焦时自动弹出数字键盘
+      document.getElementById('code').addEventListener('focus', function () {
+        this.setAttribute('type', 'tel'); // 强制数字键盘
+      });
     };
 
     // 渲染历史记录列表
@@ -292,15 +526,17 @@
         historyContent.className = 'history-content';
         historyContent.onclick = () => searchHistory(item.fundCode);
         historyContent.innerHTML = `
-          <span class="history-code">${item.fundCode}</span>
-          <span class="history-name">${item.fundName}</span>
-          <span class="history-time">${item.searchTime}</span>
+          <div class="acea-row row-between row-center">
+            <span class="history-code">${item.fundCode}</span>
+           <span class="history-name">${item.fundName}</span>
+          </div>
+          
         `;
 
         // 删除按钮
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
-        deleteBtn.innerText = '删除';
+        deleteBtn.innerText = '×';
         // 阻止事件冒泡（避免点击删除触发重查）
         deleteBtn.onclick = (e) => {
           e.stopPropagation();
@@ -422,8 +658,8 @@
             res.data.stockList.forEach(stock => {
               stockHtml += `
                 <div class="item">
-                  <span>${stock.stockName}(${stock.stockCode})[${stock.industryName}]</span>
-                  <span class="${stock.rate >= 0 ? 'rise' : 'fall'}">
+                  <span style="font-size:13px;">${stock.stockName}(${stock.stockCode})[${stock.industryName}]</span>
+                  <span class="${stock.rate >= 0 ? 'rise' : 'fall'}" style="font-size:13px;">
                     ${stock.rate >= 0 ? '+' + stock.rate : stock.rate}% 
                     (权重${stock.weight}%)
                   </span>
@@ -446,6 +682,13 @@
         loading.style.display = "none";
       }
     }
+
+    // 移动端优化：点击空白处收起键盘
+    document.addEventListener('click', function (e) {
+      if (e.target.tagName !== 'INPUT') {
+        document.activeElement.blur();
+      }
+    });
   </script>
 </body>
 
